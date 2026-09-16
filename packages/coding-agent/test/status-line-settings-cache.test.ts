@@ -4,6 +4,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { stripVTControlCharacters } from "node:util";
 import { Settings } from "@oh-my-pi/pi-coding-agent/config/settings";
+import type { SettingsSelectorComponent } from "@oh-my-pi/pi-coding-agent/modes/components/settings-selector";
 import { StatusLineComponent, type StatusLineSettings } from "@oh-my-pi/pi-coding-agent/modes/components/status-line";
 import { STATUS_LINE_PRESETS } from "@oh-my-pi/pi-coding-agent/modes/components/status-line/presets";
 import { SelectorController } from "@oh-my-pi/pi-coding-agent/modes/controllers/selector-controller";
@@ -105,6 +106,54 @@ describe("StatusLineComponent effective settings cache", () => {
 			expect(component.getTopBorder(120).content).toBe(before);
 		},
 	);
+
+	it("preserves custom path rendering while toggling Pets in the menu and after closing it", async () => {
+		const settings = Settings.instance;
+		settings.set("git.enabled", false);
+		settings.set("statusLine.preset", "custom");
+		settings.set("statusLine.leftSegments", ["path"]);
+		settings.set("statusLine.rightSegments", []);
+		settings.set("statusLine.segmentOptions", {
+			path: { abbreviate: false, maxLength: 200, stripWorkPrefix: false },
+		});
+		const session = Object.assign(makeSession(), {
+			getAvailableThinkingLevels: () => [],
+			getAvailableModels: () => [],
+		});
+		const component = statusLines.track(new StatusLineComponent(session));
+		const before = component.getTopBorder(240).content;
+		expect(stripVTControlCharacters(before)).toContain(projectDir);
+		const shown = Promise.withResolvers<SettingsSelectorComponent>();
+		let closed = false;
+		const controller = new SelectorController({
+			session,
+			statusLine: component,
+			editor: { getTopBorderAvailableWidth: (width: number) => width },
+			editorContainer: { children: [] },
+			ui: {
+				terminal: { columns: 240, rows: 40 },
+				requestRender: () => {},
+				setFocus: () => {},
+				showOverlay: (selector: SettingsSelectorComponent) => {
+					shown.resolve(selector);
+					return { hide: () => (closed = true) };
+				},
+			},
+		} as unknown as InteractiveModeContext);
+		controller.showSettingsSelector();
+		const selector = await shown.promise;
+		for (const char of "statusLine.pets") selector.handleInput(char);
+		selector.handleInput("\n");
+		expect(settings.get("statusLine.pets")).toBe(true);
+		expect(component.getTopBorder(240).content).toBe(before);
+		selector.handleInput("\n");
+		expect(settings.get("statusLine.pets")).toBe(false);
+		expect(component.getTopBorder(240).content).toBe(before);
+		selector.handleInput("\x1b"); // Leave search.
+		selector.handleInput("\x1b"); // Close settings.
+		expect(closed).toBe(true);
+		expect(component.getTopBorder(240).content).toBe(before);
+	});
 
 	it("keeps repeated cached renders byte-identical across presets and widths", () => {
 		const cases: StatusLineSettings[] = [
