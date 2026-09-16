@@ -6,6 +6,10 @@
 
 - Added `tui.titleSpinner` (`braille` | `dots` | `line`, default `braille`) to pick the terminal-title working-state spinner glyphs alongside the existing `tui.titleState` on/off toggle.
 
+### Fixed
+
+- The `security-reviewer` agent no longer has every finding rejected with `findings/N/optionalProperties: is required`, and can now report `anchor` and `remediation` for a finding ([#12208](https://github.com/can1357/oh-my-pi/pull/12208) by [@Sandu1213](https://github.com/Sandu1213)).
+
 ## [18.2.1] - 2026-09-15
 
 ### Breaking Changes
