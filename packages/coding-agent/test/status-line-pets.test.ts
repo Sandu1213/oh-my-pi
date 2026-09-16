@@ -23,6 +23,7 @@ beforeEach(async () => {
 afterEach(() => {
 	components.dispose();
 	vi.useRealTimers();
+	// Shared cleanup restores all spies, including Date.now, before resetting settings.
 	restoreSettingsTestState(settingsState);
 });
 

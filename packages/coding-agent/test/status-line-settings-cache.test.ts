@@ -6,7 +6,9 @@ import { stripVTControlCharacters } from "node:util";
 import { Settings } from "@oh-my-pi/pi-coding-agent/config/settings";
 import { StatusLineComponent, type StatusLineSettings } from "@oh-my-pi/pi-coding-agent/modes/components/status-line";
 import { STATUS_LINE_PRESETS } from "@oh-my-pi/pi-coding-agent/modes/components/status-line/presets";
+import { SelectorController } from "@oh-my-pi/pi-coding-agent/modes/controllers/selector-controller";
 import { initTheme, theme } from "@oh-my-pi/pi-coding-agent/modes/theme/theme";
+import type { InteractiveModeContext } from "@oh-my-pi/pi-coding-agent/modes/types";
 import { visibleWidth } from "@oh-my-pi/pi-tui";
 import * as vcs from "@oh-my-pi/pi-natives/vcs";
 import { removeSyncWithRetries, setProjectDir } from "@oh-my-pi/pi-utils";
@@ -80,6 +82,30 @@ function makeComponent(statusLineSettings: StatusLineSettings): StatusLineCompon
 }
 
 describe("StatusLineComponent effective settings cache", () => {
+	it.each(["off", "percentage", "annotated"] as const)(
+		"preserves the rendered %s context line when Pets changes in settings",
+		contextLine => {
+			const settings = Settings.instance;
+			settings.set("statusLine.preset", "custom");
+			settings.set("statusLine.leftSegments", ["context_pct"]);
+			settings.set("statusLine.rightSegments", []);
+			settings.set("statusLine.contextLine", contextLine);
+			const component = statusLines.track(new StatusLineComponent(makeSession()));
+			const controller = new SelectorController({
+				statusLine: component,
+				ui: { requestRender: () => {} },
+			} as unknown as InteractiveModeContext);
+			const before = component.getTopBorder(120).content;
+
+			settings.set("statusLine.pets", true);
+			controller.handleSettingChange("statusLine.pets", true);
+			expect(component.getTopBorder(120).content).toBe(before);
+			settings.set("statusLine.pets", false);
+			controller.handleSettingChange("statusLine.pets", false);
+			expect(component.getTopBorder(120).content).toBe(before);
+		},
+	);
+
 	it("keeps repeated cached renders byte-identical across presets and widths", () => {
 		const cases: StatusLineSettings[] = [
 			{ preset: "default", sessionAccent: false },

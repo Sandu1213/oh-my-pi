@@ -4,68 +4,68 @@ const BUCKET_MS = 120_000;
 const FRESH_MS = 120_000;
 const OVERLOAD_PERCENT = 85;
 
-// Preserve Code Cat's faces, Chinese messages, and session-stable rotation.
+// Code Cat's four faces and session-stable rotation, with English messages.
 const POOLS = {
 	thinking: {
 		face: "(=^-.-^=)c(_)",
 		lines: [
-			"本喵正在深度思考",
-			"CPU 正在喵喵作响！",
-			"别吵，脑回路在高速运转喵",
-			"让本喵想想...鱼干放哪了？哦不，是这段逻辑",
-			"思考中...这是喵生三大难题之一",
-			"正在遍历九条命的解法空间",
-			"递归太深，本喵先绕个毛线球出来",
-			"嘘--灵感之鱼快上钩了",
-			"正在编译喵思维...进度 99%",
-			"深潜代码海沟，请勿打扰喵",
-			"爪子搭在下巴上，进入贤者模式",
-			"本喵掐指一算：这个方案能行！",
+			"This cat is deep in thought.",
+			"The CPU is purring!",
+			"Quiet, my neurons are working at full speed.",
+			"Let me think... where are the treats? I mean, the logic.",
+			"Thinking... one of life's great feline mysteries.",
+			"Exploring the solution space across all nine lives.",
+			"Recursion too deep. Untangling a ball of yarn first.",
+			"Shh, an idea is about to bite.",
+			"Compiling cat thoughts... 99% complete.",
+			"Diving deep into the code. Do not disturb.",
+			"Paw on chin. Entering wise-cat mode.",
+			"My whiskers say this plan could work!",
 		],
 	},
 	idle: {
 		face: "(=^.w.^=)",
 		lines: [
-			"本喵盯着你，放心写！",
-			"主人，今天写的代码真漂亮~",
-			"这行代码，本喵批准了！",
-			"喵？这个变量名起得不错嘛",
-			"摸鱼要适度，撸猫不限量",
-			"本喵在此坐镇，bug 不敢造次",
-			"键盘是你的，膝盖是本喵的",
-			"写累了就看看本喵回回血",
-			"今天也要优雅地 shipping 喵~",
-			"记得喝水，别学本喵只舔爪子",
-			"陪你 debug 到天荒地老喵",
-			"尾巴测风仪显示：今日宜提交",
+			"I am watching over you. Keep coding!",
+			"Your code is looking lovely today.",
+			"This line of code is cat-approved.",
+			"Meow? Nice variable name.",
+			"Take breaks in moderation. Pet cats without limits.",
+			"With this cat on guard, bugs had better beware.",
+			"The keyboard is yours. Your lap is mine.",
+			"Tired of coding? Look at the cat to recharge.",
+			"Ship something elegant today. Meow!",
+			"Remember to drink water, not just lick your paws.",
+			"I will debug with you until the end of time.",
+			"The tail forecast says it is a good day to commit.",
 		],
 	},
 	fresh: {
 		face: "(=^-.-^=)zZ",
 		lines: [
-			"喵呜~刚睡醒，准备好大干一场了吗？",
-			"新会话开张！今天想造点什么喵？",
-			"伸个懒腰...好，开工！",
-			"本喵已就位，请下达指令！",
-			"今日宜写码，忌摸鱼（本喵除外）",
-			"魔法猫咪上线，说出你的愿望喵",
-			"先定个小目标：0 error 0 warning",
-			"铲屎官早！哦不，工程师早！",
-			"爪子已热好，键盘已擦亮",
-			"一杯咖啡一只猫，代码写到笑哈哈",
+			"Just woke up. Ready to build something?",
+			"New session! What shall we make today?",
+			"A little stretch... all right, let's get to work!",
+			"Your cat is ready. Awaiting instructions!",
+			"A fine day for coding, not loafing. Except for me.",
+			"Magic cat online. Make a wish!",
+			"First goal: zero errors, zero warnings.",
+			"Good morning, human! I mean, engineer!",
+			"Paws warmed up. Keyboard polished.",
+			"A coffee, a cat, and some cheerful coding.",
 		],
 	},
 	overload: {
 		face: "(=;x.x;=);;",
 		lines: [
-			"脑容量要爆炸了喵！",
-			"上下文塞满小鱼干了，快 /compact 喵！",
-			"记忆快溢出了，本喵开始忘事了...",
-			"装不下了装不下了，清理一下喵？",
-			"本喵的九条命已用掉八条半！",
-			"context 高压警报，喵头顶在冒烟",
-			"再不压缩，本喵就要吐毛球了",
-			"内存告急！建议先保存进度喵",
+			"My brain is about to burst. Meow!",
+			"Context is full of treats. Time for /compact!",
+			"Memory is overflowing. I am starting to forget...",
+			"No room left. Could we tidy up?",
+			"I have used eight and a half of my nine lives!",
+			"Context pressure alert. My ears are steaming.",
+			"Compact soon or I might cough up a hairball.",
+			"Running out of room. Save your progress!",
 		],
 	},
 };
@@ -86,5 +86,5 @@ export function renderPetStatus(
 		seed = Math.imul(seed ^ sessionId.charCodeAt(i), 0x01000193) >>> 0;
 	}
 	const line = pool.lines[(seed + Math.floor(now / BUCKET_MS)) % pool.lines.length];
-	return `${theme.fg("warning", pool.face)} 「${line}」`;
+	return `${theme.fg("warning", pool.face)} "${line}"`;
 }

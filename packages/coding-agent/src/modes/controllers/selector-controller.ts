@@ -858,6 +858,7 @@ export class SelectorController {
 					transparent: settings.get("statusLine.transparent"),
 					segmentOptions: settings.get("statusLine.segmentOptions"),
 					compactThinkingLevel: settings.get("statusLine.compactThinkingLevel"),
+					contextLine: settings.get("statusLine.contextLine"),
 				};
 				this.ctx.statusLine.updateSettings(statusLineSettings);
 				this.ctx.ui.requestRender();
