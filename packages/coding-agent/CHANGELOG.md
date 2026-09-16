@@ -5,6 +5,7 @@
 ### Added
 
 - Added `tui.titleSpinner` (`braille` | `dots` | `line`, default `braille`) to pick the terminal-title working-state spinner glyphs alongside the existing `tui.titleState` on/off toggle.
+- Added `/pets on` and `/pets off` to show or hide the Code Cat status-line companion, with persistent settings and session-aware faces and messages.
 
 ## [18.2.1] - 2026-09-15
 

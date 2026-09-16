@@ -41,6 +41,7 @@ import {
 	detectCodexResetFireworks,
 } from "../codex-reset-fireworks";
 import { canReuseCachedPr, createPrCacheContext, isSamePrCacheContext, type PrCacheContext } from "./git-utils";
+import { renderPetStatus } from "./pets";
 import { getPreset } from "./presets";
 import { renderSegment, type SegmentContext } from "./segments";
 import { getSeparator } from "./separators";
@@ -498,6 +499,8 @@ export class StatusLineComponent implements Component {
 	#pricingTimer: NodeJS.Timeout | undefined;
 	#pricingTimerCost: ModelCost | undefined;
 	#pricingTransition: number | undefined;
+	#petTimer: NodeJS.Timeout | undefined;
+	#petLine: string | undefined;
 	#hookStatuses: Map<string, string> = new Map();
 	#sortedHookStatuses: readonly string[] = [];
 	#subagentCount: number = 0;
@@ -717,6 +720,7 @@ export class StatusLineComponent implements Component {
 		this.#invalidateStatusLineRenderCache();
 		if (this.#onBranchChange) this.#setupGitWatcher();
 		this.#syncPricingTimer();
+		this.#syncPetTimer();
 	}
 
 	getEffectiveSettingsForTest(): EffectiveStatusLineSettings {
@@ -952,6 +956,7 @@ export class StatusLineComponent implements Component {
 		this.#onBranchChange = onBranchChange;
 		this.#setupGitWatcher();
 		this.#syncPricingTimer();
+		this.#syncPetTimer();
 	}
 
 	#setupGitWatcher(): void {
@@ -1002,6 +1007,7 @@ export class StatusLineComponent implements Component {
 		this.#stopSpeculationBlink();
 		this.#stopBrandFadeTimer();
 		this.#stopPricingTimer();
+		this.#stopPetTimer();
 		this.#clearUsageStartTimer();
 		this.#onCodexResetFireworks = undefined;
 		this.#codexResetSnapshots.clear();
@@ -1156,6 +1162,7 @@ export class StatusLineComponent implements Component {
 	invalidate(): void {
 		this.#renderRevision++;
 		this.#syncPricingTimer();
+		this.#syncPetTimer();
 		// Generic repaint invalidation (theme change, message event, model
 		// switch, …). Must NOT abort or restart a live reftable HEAD/PR resolve:
 		// the render path self-invalidates via cwd/context cache-miss checks, so
@@ -3001,8 +3008,47 @@ export class StatusLineComponent implements Component {
 		return lines;
 	}
 
+	#getPetLine(): string {
+		const { usedTokens, contextWindow } = this.getCachedContextBreakdown();
+		return renderPetStatus(
+			this.session.sessionManager.getSessionId(),
+			this.session.sessionManager.getHeader()?.timestamp,
+			contextWindow > 0 ? (usedTokens / contextWindow) * 100 : 0,
+			this.session.isStreaming,
+		);
+	}
+
+	#stopPetTimer(): void {
+		clearInterval(this.#petTimer);
+		this.#petTimer = undefined;
+		this.#petLine = undefined;
+	}
+
+	#syncPetTimer(): void {
+		if (this.#disposed || !settings.get("statusLine.pets") || !this.#onBranchChange) {
+			this.#stopPetTimer();
+			return;
+		}
+		if (this.#petTimer) return;
+		this.#petTimer = setInterval(() => {
+			if (!settings.get("statusLine.pets")) {
+				this.#stopPetTimer();
+				return;
+			}
+			// State changes already repaint through agent events. Only repaint an
+			// idle terminal when the fresh window expires or the message rotates.
+			const line = this.#getPetLine();
+			if (line === this.#petLine) return;
+			this.#petLine = line;
+			this.invalidate();
+			this.#onBranchChange?.();
+		}, 15_000);
+		this.#petTimer.unref();
+	}
+
 	render(width: number): readonly string[] {
 		const lines: string[] = [];
+		this.#syncPetTimer();
 		if (this.#standalone && !this.#autocompleteActiveProbe?.()) {
 			const content = this.renderBottomBar(width, this.#standalone === "left-only" ? "left" : "full");
 			if (content) {
@@ -3013,6 +3059,10 @@ export class StatusLineComponent implements Component {
 		const showHooks = this.#settings.showHookStatus ?? true;
 		if (showHooks && this.#sortedHookStatuses.length > 0) {
 			lines.push(...this.#sortedHookStatuses.map(text => truncateToWidth(sanitizeStatusText(text), width)));
+		}
+		if (!this.#disposed && settings.get("statusLine.pets")) {
+			this.#petLine = this.#getPetLine();
+			lines.push(truncateToWidth(this.#petLine, width));
 		}
 		return lines;
 	}

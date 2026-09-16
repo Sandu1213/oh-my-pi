@@ -833,6 +833,7 @@ export class SelectorController {
 			case "statusLine.separator":
 			case "statusLineShowHooks":
 			case "statusLine.showHookStatus":
+			case "statusLine.pets":
 			case "statusLine.sessionAccent":
 			case "statusLine.transparent":
 			case "statusLine.compactThinkingLevel":
