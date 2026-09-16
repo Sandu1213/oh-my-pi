@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 import { stripVTControlCharacters } from "node:util";
+import type { CollabSessionState } from "@oh-my-pi/pi-coding-agent/collab/protocol";
 import { Settings, settings } from "@oh-my-pi/pi-coding-agent/config/settings";
 import { StatusLineComponent } from "@oh-my-pi/pi-coding-agent/modes/components/status-line";
 import { initTheme } from "@oh-my-pi/pi-coding-agent/modes/theme/theme";
@@ -87,6 +88,20 @@ describe("native status-line pets", () => {
 		expect(render()[0]).toContain("(=^.w.^=)");
 	});
 
+	it("lets collaboration guests toggle their local pet through the builtin dispatcher", async () => {
+		const { render, runtime } = fixture();
+		const guestRuntime = {
+			...runtime,
+			ctx: { ...runtime.ctx, collabGuest: {} } as unknown as InteractiveModeContext,
+		};
+		await executeBuiltinSlashCommand("/pets on", guestRuntime);
+		expect(render()[0]).toContain("(=^.w.^=)");
+		await executeBuiltinSlashCommand("/pets", guestRuntime);
+		expect(render()[0]).toContain("(=^.w.^=)");
+		await executeBuiltinSlashCommand("/pets off", guestRuntime);
+		expect(render()).toEqual([]);
+	});
+
 	it("reports when a higher-priority setting prevents a requested switch", async () => {
 		settings.override("statusLine.pets", true);
 		const { render, runtime, showWarning, showStatus } = fixture();
@@ -129,6 +144,45 @@ describe("native status-line pets", () => {
 		focused.state.tokens = 0;
 		focused.state.contextUsageRevision++;
 		expect(render()[0]).toContain("(=^-.-^=)zZ");
+	});
+
+	it("uses host context and activity for guests and falls back when host state is absent", () => {
+		settings.set("statusLine.pets", true);
+		const { state, component, render } = fixture();
+		const host: CollabSessionState = {
+			isStreaming: false,
+			queuedMessageCount: 0,
+			sessionName: "host",
+			cwd: "/tmp",
+			participants: [{ name: "Host", role: "host" }],
+			contextUsage: { tokens: 85_000, contextWindow: 100_000, percent: 85 },
+		};
+		component.setCollabStatus({ role: "guest", participantCount: 2, stateOverride: host });
+		expect(render()[0]).toContain("(=;x.x;=);;");
+
+		// Host compaction wins over a stale, overloaded local replica, including 0%.
+		state.tokens = 90_000;
+		state.contextUsageRevision++;
+		host.contextUsage = { tokens: 0, contextWindow: 100_000, percent: 0 };
+		host.isStreaming = true;
+		component.setCollabStatus({ role: "guest", participantCount: 2, stateOverride: host });
+		expect(render()[0]).toContain("(=^-.-^=)c(_)");
+
+		state.isStreaming = true;
+		host.isStreaming = false;
+		component.setCollabStatus({ role: "guest", participantCount: 2, stateOverride: host });
+		expect(render()[0]).toContain("(=^.w.^=)");
+
+		host.contextUsage = undefined;
+		component.setCollabStatus({ role: "guest", participantCount: 2, stateOverride: host });
+		expect(render()[0]).toContain("(=;x.x;=);;");
+
+		state.tokens = 0;
+		state.contextUsageRevision++;
+		component.setCollabStatus(null);
+		expect(render()[0]).toContain("(=^-.-^=)c(_)");
+		state.isStreaming = false;
+		expect(render()[0]).toContain("(=^.w.^=)");
 	});
 
 	it("refreshes an idle pet only when its text changes and stops refreshing after off or disposal", async () => {

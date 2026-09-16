@@ -3009,12 +3009,17 @@ export class StatusLineComponent implements Component {
 	}
 
 	#getPetLine(): string {
-		const { usedTokens, contextWindow } = this.getCachedContextBreakdown();
+		const collabState = this.#collabStatus?.stateOverride;
+		let contextPercent = collabState?.contextUsage?.percent;
+		if (contextPercent == null) {
+			const { usedTokens, contextWindow } = this.getCachedContextBreakdown();
+			contextPercent = contextWindow > 0 ? (usedTokens / contextWindow) * 100 : 0;
+		}
 		return renderPetStatus(
 			this.session.sessionManager.getSessionId(),
 			this.session.sessionManager.getHeader()?.timestamp,
-			contextWindow > 0 ? (usedTokens / contextWindow) * 100 : 0,
-			this.session.isStreaming,
+			contextPercent,
+			collabState?.isStreaming ?? this.session.isStreaming,
 		);
 	}
 
