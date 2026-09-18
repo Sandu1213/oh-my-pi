@@ -2,12 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 import { stripVTControlCharacters } from "node:util";
 import type { CollabSessionState } from "@oh-my-pi/pi-coding-agent/collab/protocol";
 import { Settings, settings } from "@oh-my-pi/pi-coding-agent/config/settings";
-import { StatusLineComponent } from "@oh-my-pi/pi-coding-agent/modes/components/status-line";
-import { initTheme } from "@oh-my-pi/pi-coding-agent/modes/theme/theme";
+import { statusLineHost } from "@oh-my-pi/pi-coding-agent/modes/status-line-host";
 import type { InteractiveModeContext } from "@oh-my-pi/pi-coding-agent/modes/types";
 import type { AgentSession } from "@oh-my-pi/pi-coding-agent/session/agent-session";
 import { executeBuiltinSlashCommand } from "@oh-my-pi/pi-coding-agent/slash-commands/builtin-registry";
 import { visibleWidth } from "@oh-my-pi/pi-tui";
+import { StatusLineComponent } from "@oh-my-pi/pi-tui/status-line";
+import { initTheme } from "@oh-my-pi/pi-tui/theme";
 import { beginSettingsTest, restoreSettingsTestState, type SettingsTestState } from "./helpers/settings-test-state";
 import { StatusLineTestComponents } from "./helpers/status-line";
 
@@ -46,7 +47,7 @@ function fixture(createdAt = "2020-01-01T00:00:00Z", sessionId = "pet-session") 
 		},
 		getContextUsage: () => ({ tokens: state.tokens, contextWindow: 100_000 }),
 	} as unknown as AgentSession;
-	const component = components.track(new StatusLineComponent(session));
+	const component = components.track(new StatusLineComponent(session, statusLineHost));
 	component.updateSettings({ preset: "custom", leftSegments: [], rightSegments: [], showHookStatus: true });
 	const render = (width = 120) => component.render(width).map(stripVTControlCharacters);
 	const showWarning = vi.fn();

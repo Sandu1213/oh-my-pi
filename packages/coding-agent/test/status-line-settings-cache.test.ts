@@ -4,12 +4,13 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { stripVTControlCharacters } from "node:util";
 import { Settings } from "@oh-my-pi/pi-coding-agent/config/settings";
-import type { SettingsSelectorComponent } from "@oh-my-pi/pi-coding-agent/modes/components/settings-selector";
-import { StatusLineComponent, type StatusLineSettings } from "@oh-my-pi/pi-coding-agent/modes/components/status-line";
-import { STATUS_LINE_PRESETS } from "@oh-my-pi/pi-coding-agent/modes/components/status-line/presets";
 import { SelectorController } from "@oh-my-pi/pi-coding-agent/modes/controllers/selector-controller";
-import { initTheme, theme } from "@oh-my-pi/pi-coding-agent/modes/theme/theme";
+import { statusLineHost, type StatusLineHostSession } from "@oh-my-pi/pi-coding-agent/modes/status-line-host";
 import type { InteractiveModeContext } from "@oh-my-pi/pi-coding-agent/modes/types";
+import type { SettingsSelectorComponent } from "@oh-my-pi/pi-tui/overlays/settings-selector";
+import { StatusLineComponent, type StatusLineSettings } from "@oh-my-pi/pi-tui/status-line";
+import { STATUS_LINE_PRESETS } from "@oh-my-pi/pi-tui/status-line/presets";
+import { initTheme, theme } from "@oh-my-pi/pi-tui/theme";
 import { visibleWidth } from "@oh-my-pi/pi-tui";
 import * as vcs from "@oh-my-pi/pi-natives/vcs";
 import { removeSyncWithRetries, setProjectDir } from "@oh-my-pi/pi-utils";
@@ -73,11 +74,11 @@ function makeSession(sessionName = "Cache Session") {
 			}),
 		},
 		getContextUsage: () => undefined,
-	} as unknown as ConstructorParameters<typeof StatusLineComponent>[0];
+	} as unknown as StatusLineHostSession;
 }
 
 function makeComponent(statusLineSettings: StatusLineSettings): StatusLineComponent {
-	const component = statusLines.track(new StatusLineComponent(makeSession()));
+	const component = statusLines.track(new StatusLineComponent(makeSession(), statusLineHost));
 	component.updateSettings(statusLineSettings);
 	return component;
 }
@@ -91,7 +92,7 @@ describe("StatusLineComponent effective settings cache", () => {
 			settings.set("statusLine.leftSegments", ["context_pct"]);
 			settings.set("statusLine.rightSegments", []);
 			settings.set("statusLine.contextLine", contextLine);
-			const component = statusLines.track(new StatusLineComponent(makeSession()));
+			const component = statusLines.track(new StatusLineComponent(makeSession(), statusLineHost));
 			const controller = new SelectorController({
 				statusLine: component,
 				ui: { requestRender: () => {} },
@@ -120,7 +121,7 @@ describe("StatusLineComponent effective settings cache", () => {
 			getAvailableThinkingLevels: () => [],
 			getAvailableModels: () => [],
 		});
-		const component = statusLines.track(new StatusLineComponent(session));
+		const component = statusLines.track(new StatusLineComponent(session, statusLineHost));
 		const before = component.getTopBorder(240).content;
 		expect(stripVTControlCharacters(before)).toContain(projectDir);
 		const shown = Promise.withResolvers<SettingsSelectorComponent>();
@@ -187,7 +188,7 @@ describe("StatusLineComponent effective settings cache", () => {
 			snapshotCalls++;
 			return getSnapshot();
 		};
-		const component = statusLines.track(new StatusLineComponent(session));
+		const component = statusLines.track(new StatusLineComponent(session, statusLineHost));
 		component.updateSettings({
 			preset: "custom",
 			leftSegments: ["model", "mode"],
